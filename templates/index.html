@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yt-dlp ダウンロードUI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .url-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .url-input-wrapper .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .url-input-wrapper label {
+            margin-bottom: 8px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-get-formats {
+            background: #667eea;
+            color: white;
+            padding: 12px 20px;
+            height: 42px;
+        }
+
+        .btn-get-formats:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-get-formats:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .format-selector {
+            display: none;
+        }
+
+        .format-selector.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .format-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .format-btn {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            color: #333;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .format-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .format-btn.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn-download {
+            flex: 1;
+            background: #48bb78;
+            color: white;
+            padding: 14px;
+            font-size: 16px;
+        }
+
+        .btn-download:hover:not(:disabled) {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-download:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-reset {
+            background: #cbd5e0;
+            color: #333;
+            padding: 14px;
+        }
+
+        .btn-reset:hover {
+            background: #a0aec0;
+            transform: translateY(-2px);
+        }
+
+        .video-info {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .video-info.active {
+            display: block;
+        }
+
+        .info-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .status-message.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        .status-message.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border-left: 4px solid #48bb78;
+        }
+
+        .status-message.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border-left: 4px solid #f56565;
+        }
+
+        .status-message.loading {
+            background: #bee3f8;
+            color: #2c5282;
+            border-left: 4px solid #4299e1;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading .spinner {
+            border-color: #2c5282;
+            border-top-color: #2c5282;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .format-buttons {
+                grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📥 yt-dlp ダウンロード</h1>
+        <p class="subtitle">URLと拡張子を選んで動画をダウンロード</p>
+
+        <div class="url-input-wrapper">
+            <div class="form-group" style="flex: 1;">
+                <label for="videoUrl">動画URL</label>
+                <input 
+                    type="text" 
+                    id="videoUrl" 
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    autocomplete="off"
+                >
+            </div>
+            <button class="btn-get-formats" id="getFormatsBtn">フォーマット取得</button>
+        </div>
+
+        <div class="video-info" id="videoInfo">
+            <div class="info-title" id="videoTitle"></div>
+        </div>
+
+        <div class="format-selector" id="formatSelector">
+            <label>ダウンロード形式を選択</label>
+            <div class="format-buttons" id="formatButtons"></div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-download" id="downloadBtn" disabled>ダウンロード</button>
+            <button class="btn-reset" id="resetBtn">リセット</button>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+
+        <div class="footer">
+            <p>※ ダウンロードファイルは ~/Downloads/yt-dlp に保存されます</p>
+        </div>
+    </div>
+
+    <script>
+        const videoUrlInput = document.getElementById('videoUrl');
+        const getFormatsBtn = document.getElementById('getFormatsBtn');
+        const formatSelector = document.getElementById('formatSelector');
+        const formatButtons = document.getElementById('formatButtons');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const videoInfo = document.getElementById('videoInfo');
+        const videoTitle = document.getElementById('videoTitle');
+
+        let selectedFormat = null;
+        let currentUrl = null;
+
+        // フォーマット取得
+        getFormatsBtn.addEventListener('click', async () => {
+            const url = videoUrlInput.value.trim();
+
+            if (!url) {
+                showStatus('URLを入力してください', 'error');
+                return;
+            }
+
+            currentUrl = url;
+            showStatus('フォーマット情報を取得中...', 'loading');
+            getFormatsBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/get-formats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'フォーマット取得に失敗しました');
+                }
+
+                // ビデオ情報を表示
+                videoTitle.textContent = `タイトル: ${data.title}`;
+                videoInfo.classList.add('active');
+
+                // フォーマットボタンを生成
+                formatButtons.innerHTML = '';
+                selectedFormat = null;
+                downloadBtn.disabled = true;
+
+                data.formats.forEach(format => {
+                    const btn = document.createElement('button');
+                    btn.className = 'format-btn';
+                    btn.textContent = format.toUpperCase();
+                    btn.addEventListener('click', () => selectFormat(btn, format));
+                    formatButtons.appendChild(btn);
+                });
+
+                formatSelector.classList.add('active');
+                showStatus('フォーマットを選択してください', 'loading');
+            } catch (error) {
+                showStatus(`エラー: ${error.message}`, 'error');
+                formatSelector.classList.remove('active');
+            } finally {
+                getFormatsBtn.disabled = false;
+            }
+        });
+
+        // フォーマット選択
+        function selectFormat(btn, format) {
+            // 前の選択を解除
+            document.querySelectorAll('.format-btn').forEach(b => {
+                b.classList.remove('selected');
+            });
+
+            // 新しい選択を表示
+            btn.classList.add('selected');
+            selectedFormat = format;
+            downloadBtn.disabled = false;
+            showStatus(`${format.toUpperCase()} が選択されまし��`, 'success');
+        }
+
+        // ダウンロード
+        downloadBtn.addEventListener('click', async () => {
+            if (!currentUrl || !selectedFormat) {
+                showStatus('URLとフォーマットを選択してください', 'error');
+                return;
+            }
+
+            showStatus('ダウンロード中...', 'loading');
+            downloadBtn.disabled = true;
+            getFormatsBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: currentUrl,
+                        format: selectedFormat,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'ダウンロードに失敗しました');
+                }
+
+                showStatus(`✓ ダウンロード完了: ${data.filename}`, 'success');
+            } catch (error) {
+                showStatus(`エラー: ${error.message}`, 'error');
+            } finally {
+                downloadBtn.disabled = false;
+                getFormatsBtn.disabled = false;
+            }
+        });
+
+        // リセット
+        resetBtn.addEventListener('click', () => {
+            videoUrlInput.value = '';
+            formatSelector.classList.remove('active');
+            videoInfo.classList.remove('active');
+            statusMessage.classList.remove('active');
+            downloadBtn.disabled = true;
+            selectedFormat = null;
+            currentUrl = null;
+            videoUrlInput.focus();
+        });
+
+        // ステータスメッセージ表示
+        function showStatus(message, type) {
+            statusMessage.textContent = '';
+            statusMessage.className = 'status-message active ' + type;
+
+            if (type === 'loading') {
+                const spinner = document.createElement('span');
+                spinner.className = 'spinner';
+                statusMessage.appendChild(spinner);
+            }
+
+            const text = document.createTextNode(message);
+            statusMessage.appendChild(text);
+        }
+
+        // Enterキーでフォーマット取得
+        videoUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                getFormatsBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
